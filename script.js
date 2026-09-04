@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOpenRegister = document.querySelector('#btn-open-register');
   const registerModal = document.querySelector('#register-modal');
   const registerForm = document.querySelector('#register-form');
+  const regName = document.querySelector('#reg-name');
   const regEmail = document.querySelector('#reg-email');
   const regPassword = document.querySelector('#reg-password');
   const registerFeedback = document.querySelector('#register-feedback');
@@ -145,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // Alternador de Visibilidade da Senha
+  // Alternador de Visibilidade da Senha (Olho Fechado / Aberto)
   document.querySelectorAll('.btn-toggle-pass').forEach(button => {
     button.addEventListener('click', (e) => {
       e.preventDefault();
@@ -173,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (user) {
       localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
       
-      // Formata nome do usuário a partir do DisplayName ou do E-mail
       const username = user.displayName 
         ? user.displayName 
         : (user.email ? user.email.split('@')[0] : 'Criatura');
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================
-  // CADASTRO / CRIAR CONTA
+  // CADASTRO / CRIAR CONTA (COM NOME)
   // ==========================================
   function validatePassword(pass) {
     const hasUpper = /[A-Z]/.test(pass);
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
     validatePassword('');
     
     registerModal.classList.add('is-active');
-    setTimeout(() => regEmail.focus(), 50);
+    setTimeout(() => regName.focus(), 50);
   });
 
   btnCancelRegister.addEventListener('click', () => {
@@ -278,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   registerForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    const name = regName.value.trim();
     const email = regEmail.value.trim();
     const pass = regPassword.value.trim();
 
@@ -291,8 +292,14 @@ document.addEventListener('DOMContentLoaded', () => {
     registerFeedback.className = "login-feedback";
 
     auth.createUserWithEmailAndPassword(email, pass)
+      .then((userCredential) => {
+        return userCredential.user.updateProfile({
+          displayName: name
+        });
+      })
       .then(() => {
-        registerFeedback.textContent = "Conta criada com sucesso! Entrando no covil...";
+        greetingUsername.textContent = name;
+        registerFeedback.textContent = `Pacto selado, ${name}! Entrando no covil...`;
         registerFeedback.className = "login-feedback is-success";
         triggerWelcomeBats();
 
