@@ -46,12 +46,10 @@ function resolveCoverUrl(movie) {
   }
   const cleanCover = movie.cover.trim();
 
-  // Imagens locais coladas via Base64 não passam por proxy
   if (cleanCover.startsWith('data:image/')) {
     return cleanCover;
   }
 
-  // URLs remotas antigas passam pelo proxy weserv.nl
   if (cleanCover.startsWith('http://') || cleanCover.startsWith('https://')) {
     return `https://images.weserv.nl/?url=${encodeURIComponent(cleanCover)}&default=${encodeURIComponent(fallbackSvg)}`;
   }
@@ -145,6 +143,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let visibleWeeks = 1;
   let searchQuery = '';
   let movieToDeleteId = null;
+
+  // Alternador de Visibilidade da Senha (Olhinho Fechado / Aberto)
+  document.querySelectorAll('.btn-toggle-pass').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = button.dataset.target;
+      const passInput = document.getElementById(targetId);
+      if (!passInput) return;
+
+      const isPassword = passInput.type === 'password';
+      passInput.type = isPassword ? 'text' : 'password';
+      button.textContent = isPassword ? '👁️' : '🙈';
+      
+      passInput.focus();
+      const val = passInput.value;
+      passInput.value = '';
+      passInput.value = val;
+    });
+  });
 
   if (localStorage.getItem(LOCAL_AUTH_CACHE_KEY) === 'true') {
     appWrapper.classList.remove('is-hidden');
@@ -348,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const maxWidth = 420; // Dimensão ideal para poster
+        const maxWidth = 420;
         let width = img.width;
         let height = img.height;
 
@@ -363,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Converte para JPEG comprimido (~40-60KB em Base64)
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
         setCoverPreview(compressedBase64);
       };
