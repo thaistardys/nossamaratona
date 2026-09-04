@@ -11,25 +11,20 @@
   
   <link rel="stylesheet" href="style.css">
 
-  <!-- Scripts Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
 
-  <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
   
-  <!-- Script Principal da Aplicação -->
   <script src="script.js" defer></script>
 </head>
 <body>
 
-  <!-- Overlay de Jumpscare -->
   <div id="jumpscare-overlay" class="jumpscare-overlay">
     <div class="jumpscare-face">👹</div>
   </div>
 
-  <!-- Tela de Login Temática -->
   <section id="login-section" class="login-container is-hidden">
     <div class="login-card" id="login-card">
       <header class="login-header">
@@ -52,11 +47,11 @@
         <p id="login-feedback" class="login-feedback"></p>
 
         <button type="submit" class="btn-primary-action btn-submit-login">Entrar na Maratona 🦇</button>
+        <button type="button" class="btn-secondary-link" id="btn-open-register">Não tem feitiço? Criar Conta 🕯️</button>
       </form>
     </div>
   </section>
 
-  <!-- Aplicação Principal -->
   <div id="app-wrapper" class="app-wrapper is-hidden">
     <header class="app-header">
       <div class="header-top-bar">
@@ -98,7 +93,6 @@
       </button>
     </div>
 
-    <!-- Rodapé Temático -->
     <footer class="app-footer">
       <div class="footer-divider"></div>
       <p class="footer-text">
@@ -108,7 +102,6 @@
     </footer>
   </div>
 
-  <!-- Modal de Criação / Edição (CRUD) -->
   <div class="modal-overlay" id="movie-form-modal">
     <div class="modal-content form-modal-content">
       <h2 class="modal-title" id="form-modal-title">Novo Filme</h2>
@@ -168,7 +161,6 @@
     </div>
   </div>
 
-  <!-- Modal Customizado de Confirmação de Exclusão -->
   <div class="modal-overlay" id="delete-confirm-modal">
     <div class="modal-content delete-modal-content">
       <span class="modal-icon">⚠️💀</span>
@@ -183,7 +175,39 @@
     </div>
   </div>
 
-  <!-- Modal Final Comemorativo -->
+  <div class="modal-overlay" id="register-modal">
+    <div class="modal-content form-modal-content register-modal-content">
+      <span class="modal-icon">📜🕯️</span>
+      <h2 class="modal-title register-title">Pacto de Iniciação</h2>
+      <p class="modal-desc register-desc">Cadastre seu e-mail e crie sua senha secreta para entrar no Covil.</p>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label for="reg-email">Seu Melhor E-mail</label>
+          <input type="email" id="reg-email" required placeholder="bruxo@covil.com" autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password">Feitiço Protetor (Senha)</label>
+          <input type="password" id="reg-password" required placeholder="Ex: Covil@2026" autocomplete="new-password">
+          <ul class="password-rules">
+            <li id="rule-upper">✖ Pelo menos 1 letra maiúscula</li>
+            <li id="rule-lower">✖ Pelo menos 1 letra minúscula</li>
+            <li id="rule-special">✖ Pelo menos 1 caractere especial (!@#$...)</li>
+            <li id="rule-length">✖ Mínimo de 6 caracteres</li>
+          </ul>
+        </div>
+
+        <p id="register-feedback" class="login-feedback"></p>
+
+        <div class="form-buttons">
+          <button type="button" class="btn-secondary" id="btn-cancel-register">Voltar</button>
+          <button type="submit" class="btn-primary-action" id="btn-submit-register">Criar Aliança 🎃</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="victory-modal">
     <div class="modal-content">
       <span class="modal-icon">🏆🎃👻</span>
