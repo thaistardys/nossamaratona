@@ -15,6 +15,7 @@ const WEEK_TITLES = {
 };
 
 const MAX_SYNOPSIS = 160;
+const LOCAL_AUTH_CACHE_KEY = 'halloween_auth_cached';
 
 function parseWeekSearch(term) {
   const clean = term.toLowerCase().trim();
@@ -36,10 +37,6 @@ function groupMoviesByWeek(moviesList) {
   }));
 }
 
-/**
- * [RECURSO TÉCNICO NECESSÁRIO]: 
- * Tratamento de CORS para URLs remotas e fallback data URI SVG local para evitar quebra de layout.
- */
 function resolveCoverUrl(movie) {
   const titleDisplay = movie.title.split(' ')[0];
   const fallbackSvg = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='750' viewBox='0 0 500 750'%3E%3Crect width='500' height='750' fill='%23140f24'/%3E%3Ctext x='50%25' y='48%25' fill='%23ff6b00' font-family='Arial' font-weight='bold' font-size='32' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(titleDisplay)}%3C/text%3E%3Ctext x='50%25' y='55%25' fill='%23ff6b00' font-size='48' text-anchor='middle' dominant-baseline='middle'%3E%F0%9F%8E%83%3C/text%3E%3C/svg%3E`;
@@ -55,7 +52,6 @@ function resolveCoverUrl(movie) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicialização segura com verificação explícita do SDK do Firebase
   if (typeof firebase === 'undefined') {
     console.error("Firebase SDK não carregou! Verifique os scripts no index.html.");
     return;
@@ -112,17 +108,26 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // ==========================================
-  // AUTENTICAÇÃO COM FIREBASE AUTH
-  // ==========================================
+  // =========================================================================
+  // CORREÇÃO DO FLICKER (PISCAR DA TELA DE LOGIN):
+  // Se havia cache de login recente, já pré-ativa a dashboard sem mostrar o login
+  // =========================================================================
+  if (localStorage.getItem(LOCAL_AUTH_CACHE_KEY) === 'true') {
+    appWrapper.classList.remove('is-hidden');
+    loginSection.classList.add('is-hidden');
+  }
+
+  // Observador oficial do Firebase
   auth.onAuthStateChanged((user) => {
     if (user) {
+      localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
       loginSection.classList.add('is-hidden');
       appWrapper.classList.remove('is-hidden');
       listenToFirestoreMovies();
     } else {
-      loginSection.classList.remove('is-hidden');
+      localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
       appWrapper.classList.add('is-hidden');
+      loginSection.classList.remove('is-hidden');
     }
   });
 
@@ -143,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loginFeedback.textContent = "";
           loginFeedback.className = "login-feedback";
           loginForm.reset();
-        }, 1200);
+        }, 1000);
       })
       .catch((error) => {
         console.warn("Falha no login:", error.code, error.message);
@@ -158,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnLogout.addEventListener('click', () => {
+    localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
     auth.signOut();
   });
 
@@ -171,9 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ==========================================
-  // FIRESTORE EM TEMPO REAL
-  // ==========================================
   function listenToFirestoreMovies() {
     db.collection('movies').onSnapshot((snapshot) => {
       currentMovies = [];
@@ -199,9 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   inputSynopsis.addEventListener('input', updateSynopsisCounter);
 
-  // ==========================================
-  // RENDERIZAÇÃO
-  // ==========================================
   function renderApp() {
     weeksContainer.replaceChildren();
 
@@ -330,9 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgress(watchedCount, currentMovies.length);
   }
 
-  // ==========================================
-  // OPERAÇÕES DO FIRESTORE (CRUD + STATUS)
-  // ==========================================
   weeksContainer.addEventListener('click', (e) => {
     const btnAction = e.target.closest('.btn-action');
     if (btnAction) {
