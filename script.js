@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const appWrapper = document.querySelector('#app-wrapper');
   const btnLogout = document.querySelector('#btn-logout');
 
-  // Elementos do Modal de Cadastro
+  // Modal Cadastro
   const btnOpenRegister = document.querySelector('#btn-open-register');
   const registerModal = document.querySelector('#register-modal');
   const registerForm = document.querySelector('#register-form');
@@ -87,6 +87,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const ruleSpecial = document.querySelector('#rule-special');
   const ruleLength = document.querySelector('#rule-length');
 
+  // Modal Recuperação de Senha
+  const btnOpenForgot = document.querySelector('#btn-open-forgot');
+  const forgotModal = document.querySelector('#forgot-modal');
+  const forgotForm = document.querySelector('#forgot-form');
+  const forgotEmail = document.querySelector('#forgot-email');
+  const forgotFeedback = document.querySelector('#forgot-feedback');
+  const btnCancelForgot = document.querySelector('#btn-cancel-forgot');
+
+  // Componentes da Aplicação Principal
   const weeksContainer = document.querySelector('#weeks-container');
   const btnLoadMore = document.querySelector('#btn-load-more');
   const loadMoreWrapper = document.querySelector('#load-more-wrapper');
@@ -122,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // Evita o flicker na tela de login ao atualizar a página
+  // Evita o flicker na tela de login ao recarregar
   if (localStorage.getItem(LOCAL_AUTH_CACHE_KEY) === 'true') {
     appWrapper.classList.remove('is-hidden');
     loginSection.classList.add('is-hidden');
@@ -133,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
       loginSection.classList.add('is-hidden');
       registerModal.classList.remove('is-active');
+      forgotModal.classList.remove('is-active');
       appWrapper.classList.remove('is-hidden');
       listenToFirestoreMovies();
     } else {
@@ -210,13 +220,17 @@ document.addEventListener('DOMContentLoaded', () => {
     validatePassword(regPassword.value);
   });
 
-  btnOpenRegister.addEventListener('click', () => {
+  btnOpenRegister.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     registerForm.reset();
     registerFeedback.textContent = '';
     registerFeedback.className = 'login-feedback';
     validatePassword('');
+    
     registerModal.classList.add('is-active');
-    regEmail.focus();
+    setTimeout(() => regEmail.focus(), 50);
   });
 
   btnCancelRegister.addEventListener('click', () => {
@@ -257,6 +271,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         registerFeedback.textContent = msg;
         registerFeedback.className = "login-feedback is-error";
+      });
+  });
+
+  // ==========================================
+  // RECUPERAÇÃO DE SENHA (ESQUECI A SENHA)
+  // ==========================================
+  btnOpenForgot.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    forgotForm.reset();
+    forgotFeedback.textContent = '';
+    forgotFeedback.className = 'login-feedback';
+
+    // Preenche se o usuário já tiver digitado algo no login
+    if (loginUser.value.trim()) {
+      forgotEmail.value = loginUser.value.trim();
+    }
+
+    forgotModal.classList.add('is-active');
+    setTimeout(() => forgotEmail.focus(), 50);
+  });
+
+  btnCancelForgot.addEventListener('click', () => {
+    forgotModal.classList.remove('is-active');
+  });
+
+  forgotForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = forgotEmail.value.trim();
+
+    forgotFeedback.textContent = "Consultando os espíritos...";
+    forgotFeedback.className = "login-feedback";
+
+    auth.sendPasswordResetEmail(email)
+      .then(() => {
+        forgotFeedback.textContent = "Feitiço enviado! Verifique sua caixa de entrada 🦇";
+        forgotFeedback.className = "login-feedback is-success";
+
+        setTimeout(() => {
+          forgotModal.classList.remove('is-active');
+          forgotForm.reset();
+        }, 2200);
+      })
+      .catch((error) => {
+        let msg = "Erro ao enviar feitiço. Tente novamente.";
+        if (error.code === 'auth/user-not-found') {
+          msg = "Nenhuma alma encontrada com este e-mail!";
+        } else if (error.code === 'auth/invalid-email') {
+          msg = "Formato de e-mail inválido!";
+        }
+        forgotFeedback.textContent = msg;
+        forgotFeedback.className = "login-feedback is-error";
       });
   });
 
