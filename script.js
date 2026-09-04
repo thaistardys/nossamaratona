@@ -128,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const pastePreviewWrapper = document.querySelector('#paste-preview-wrapper');
   const pastePreviewImg = document.querySelector('#paste-preview-img');
   const btnRemovePasted = document.querySelector('#btn-remove-pasted');
-  const movieFileInput = document.querySelector('#movie-file-input');
 
   const inputWeek = document.querySelector('#movie-week-input');
   const inputDay = document.querySelector('#movie-day-input');
@@ -245,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================
-  // CADASTRO / CRIAR CONTA (COM ASYNC/AWAIT)
+  // CADASTRO / CRIAR CONTA
   // ==========================================
   function validatePassword(pass) {
     const hasUpper = /[A-Z]/.test(pass);
@@ -448,18 +447,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleImagePaste(e) {
     const clipboard = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
-    if (!clipboard || !clipboard.items) return;
+    if (!clipboard) return;
 
-    for (const item of clipboard.items) {
-      if (item.type.indexOf('image') !== -1) {
-        const file = item.getAsFile();
-        if (file) {
-          processAndCompressImage(file);
-          e.preventDefault();
-          break;
+    // 1. Tenta capturar arquivo direto (PC e navegadores compatíveis)
+    if (clipboard.items) {
+      for (const item of clipboard.items) {
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            processAndCompressImage(file);
+            cleanPasteZoneText();
+            return;
+          }
         }
       }
     }
+
+    // 2. Fallback para celulares que transferem imagem como fragmento HTML
+    const htmlData = clipboard.getData('text/html');
+    if (htmlData) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlData, 'text/html');
+      const img = doc.querySelector('img');
+      if (img && img.src) {
+        e.preventDefault();
+        if (img.src.startsWith('data:image/')) {
+          setCoverPreview(img.src);
+        } else {
+          fetch(img.src)
+            .then(res => res.blob())
+            .then(blob => processAndCompressImage(blob))
+            .catch(() => setCoverPreview(img.src));
+        }
+        cleanPasteZoneText();
+        return;
+      }
+    }
+  }
+
+  function cleanPasteZoneText() {
+    setTimeout(() => {
+      const nodes = Array.from(pasteZone.childNodes);
+      nodes.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          node.remove();
+        }
+      });
+    }, 10);
   }
 
   pasteZone.addEventListener('paste', handleImagePaste);
@@ -469,17 +504,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  pasteZone.addEventListener('dblclick', () => movieFileInput.click());
-  movieFileInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) {
-      processAndCompressImage(e.target.files[0]);
-    }
-  });
-
   btnRemovePasted.addEventListener('click', (e) => {
     e.stopPropagation();
     setCoverPreview('');
-    movieFileInput.value = '';
   });
 
   function triggerWelcomeBats() {
@@ -731,7 +758,6 @@ document.addEventListener('DOMContentLoaded', () => {
     movieForm.reset();
     inputId.value = '';
     setCoverPreview('');
-    movieFileInput.value = '';
     formModalTitle.textContent = "Novo Filme";
     updateSynopsisCounter();
     movieFormModal.classList.add('is-active');
