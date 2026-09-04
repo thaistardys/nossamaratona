@@ -124,9 +124,24 @@
           <input type="text" id="movie-title-input" required placeholder="Ex: Pânico (1996)">
         </div>
 
+        <!-- Área de Colar / Selecionar Imagem da Capa -->
         <div class="form-group">
-          <label for="movie-cover-input">Link da Capa (URL externa)</label>
-          <input type="url" id="movie-cover-input" placeholder="https://exemplo.com/poster.jpg">
+          <label>Capa do Filme (Cole com Ctrl+V ou Escolha um arquivo)</label>
+          <div class="paste-zone" id="paste-zone" tabindex="0">
+            <input type="file" id="movie-file-input" accept="image/*" class="file-hidden-input">
+            <input type="hidden" id="movie-cover-input">
+            
+            <div class="paste-zone-placeholder" id="paste-placeholder">
+              <span class="paste-icon">📋🖼️</span>
+              <p class="paste-main-text">Clique aqui e aperte <strong>Ctrl + V</strong> para colar a imagem copiada</p>
+              <span class="paste-sub-text">ou dê duplo clique para escolher um arquivo do computador</span>
+            </div>
+
+            <div class="paste-preview-wrapper is-hidden" id="paste-preview-wrapper">
+              <img id="paste-preview-img" src="" alt="Prévia da capa" class="paste-preview-img">
+              <button type="button" class="btn-remove-pasted" id="btn-remove-pasted" title="Remover imagem">✕</button>
+            </div>
+          </div>
         </div>
 
         <div class="form-row">
