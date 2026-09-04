@@ -98,6 +98,26 @@ body {
   margin-top: 0.75rem;
 }
 
+.btn-secondary-link {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--purple-light);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.85rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s, text-shadow 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.btn-secondary-link:hover {
+  color: var(--orange-primary);
+  text-shadow: 0 0 8px var(--orange-glow);
+}
+
 .login-feedback {
   min-height: 1.2rem;
   font-size: 0.8rem;
@@ -561,10 +581,10 @@ body {
 }
 
 /* =========================================
-   RODAPÉ TEMÁTICO (EMPURRADO PARA O FUNDO)
+   RODAPÉ TEMÁTICO
    ========================================= */
 .app-footer {
-  margin-top: auto; /* Garante que fique colado na base quando o conteúdo for curto */
+  margin-top: auto;
   padding: 3rem 1rem 1rem;
   text-align: center;
 }
@@ -598,7 +618,7 @@ body {
 }
 
 /* =========================================
-   MODAIS
+   MODAIS & FORMULÁRIOS
    ========================================= */
 .modal-overlay {
   position: fixed;
@@ -632,6 +652,42 @@ body {
   box-shadow: 0 0 30px rgba(157, 78, 221, 0.25);
   text-align: left;
   max-width: 580px;
+}
+
+.register-modal-content {
+  max-width: 460px;
+}
+
+.register-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 0.3rem;
+}
+
+.register-desc {
+  text-align: center;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.password-rules {
+  list-style: none;
+  padding: 0;
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.password-rules li {
+  font-size: 0.75rem;
+  color: var(--danger-color);
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.password-rules li.valid {
+  color: var(--success-color);
 }
 
 .modal-icon {
