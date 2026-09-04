@@ -11,19 +11,25 @@
   
   <link rel="stylesheet" href="style.css">
 
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
-  <script src="script.js" defer></script>
+  <!-- Scripts Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
 
-	<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
+  
+  <!-- Script Principal da Aplicação -->
+  <script src="script.js" defer></script>
 </head>
 <body>
 
+  <!-- Overlay de Jumpscare -->
   <div id="jumpscare-overlay" class="jumpscare-overlay">
     <div class="jumpscare-face">👹</div>
   </div>
 
+  <!-- Tela de Login Temática -->
   <section id="login-section" class="login-container">
     <div class="login-card" id="login-card">
       <header class="login-header">
@@ -34,8 +40,8 @@
 
       <form id="login-form">
         <div class="form-group">
-          <label for="login-user">Espírito / Usuário</label>
-          <input type="text" id="login-user" required placeholder="Digite seu usuário" autocomplete="username">
+          <label for="login-user">E-mail Cadastrado</label>
+          <input type="email" id="login-user" required placeholder="seu@email.com" autocomplete="username">
         </div>
 
         <div class="form-group">
@@ -50,6 +56,7 @@
     </div>
   </section>
 
+  <!-- Aplicação Principal (Inicia Oculta) -->
   <div id="app-wrapper" class="app-wrapper is-hidden">
     <header class="app-header">
       <div class="header-top-bar">
@@ -92,6 +99,7 @@
     </div>
   </div>
 
+  <!-- Modal de Criação / Edição (CRUD) -->
   <div class="modal-overlay" id="movie-form-modal">
     <div class="modal-content form-modal-content">
       <h2 class="modal-title" id="form-modal-title">Novo Filme</h2>
@@ -151,6 +159,7 @@
     </div>
   </div>
 
+  <!-- Modal Customizado de Confirmação de Exclusão -->
   <div class="modal-overlay" id="delete-confirm-modal">
     <div class="modal-content delete-modal-content">
       <span class="modal-icon">⚠️💀</span>
@@ -165,6 +174,7 @@
     </div>
   </div>
 
+  <!-- Modal Final Comemorativo -->
   <div class="modal-overlay" id="victory-modal">
     <div class="modal-content">
       <span class="modal-icon">🏆🎃👻</span>
