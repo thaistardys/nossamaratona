@@ -44,7 +44,7 @@ body {
 }
 
 /* =========================================
-   TELA DE LOGIN - CENTRALIZAÇÃO TOTAL
+   TELA DE LOGIN
    ========================================= */
 .login-container {
   min-height: 100vh;
@@ -141,6 +141,43 @@ body {
   text-shadow: 0 0 6px var(--orange-glow);
 }
 
+/* =========================================
+   CAMPO DE SENHA COM BOTÃO OLHINHO
+   ========================================= */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 2.8rem !important;
+}
+
+.btn-toggle-pass {
+  position: absolute;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transition: opacity 0.2s, transform 0.15s;
+  user-select: none;
+}
+
+.btn-toggle-pass:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 .login-feedback {
   min-height: 1.2rem;
   font-size: 0.8rem;
@@ -176,7 +213,7 @@ body {
 }
 
 /* =========================================
-   CONTAINER PRINCIPAL (DASHBOARD AMPLA)
+   CONTAINER PRINCIPAL
    ========================================= */
 .app-wrapper {
   width: 100%;
@@ -604,7 +641,7 @@ body {
 }
 
 /* =========================================
-   RODAPÉ TEMÁTICO
+   RODAPÉ
    ========================================= */
 .app-footer {
   margin-top: auto;
@@ -890,7 +927,7 @@ body {
 }
 
 /* =========================================
-   ÁREA DE COLAR IMAGEM (CLIPBOARD DROPZONE)
+   ÁREA DE COLAR IMAGEM (DROPZONE)
    ========================================= */
 .paste-zone {
   position: relative;
