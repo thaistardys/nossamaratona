@@ -45,6 +45,13 @@ function resolveCoverUrl(movie) {
     return fallbackSvg;
   }
   const cleanCover = movie.cover.trim();
+
+  // Imagens locais coladas via Base64 não passam por proxy
+  if (cleanCover.startsWith('data:image/')) {
+    return cleanCover;
+  }
+
+  // URLs remotas antigas passam pelo proxy weserv.nl
   if (cleanCover.startsWith('http://') || cleanCover.startsWith('https://')) {
     return `https://images.weserv.nl/?url=${encodeURIComponent(cleanCover)}&default=${encodeURIComponent(fallbackSvg)}`;
   }
@@ -95,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const forgotFeedback = document.querySelector('#forgot-feedback');
   const btnCancelForgot = document.querySelector('#btn-cancel-forgot');
 
-  // Componentes da Aplicação Principal
+  // Aplicação Principal
   const weeksContainer = document.querySelector('#weeks-container');
   const btnLoadMore = document.querySelector('#btn-load-more');
   const loadMoreWrapper = document.querySelector('#load-more-wrapper');
@@ -106,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.querySelector('#search-input');
   const btnClearSearch = document.querySelector('#btn-clear-search');
 
+  // Formulário de Filme & Dropzone de Imagem Colada
   const movieFormModal = document.querySelector('#movie-form-modal');
   const movieForm = document.querySelector('#movie-form');
   const btnOpenAddModal = document.querySelector('#btn-open-add-modal');
@@ -115,6 +123,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputId = document.querySelector('#movie-id');
   const inputTitle = document.querySelector('#movie-title-input');
   const inputCover = document.querySelector('#movie-cover-input');
+  const pasteZone = document.querySelector('#paste-zone');
+  const pastePlaceholder = document.querySelector('#paste-placeholder');
+  const pastePreviewWrapper = document.querySelector('#paste-preview-wrapper');
+  const pastePreviewImg = document.querySelector('#paste-preview-img');
+  const btnRemovePasted = document.querySelector('#btn-remove-pasted');
+  const movieFileInput = document.querySelector('#movie-file-input');
+
   const inputWeek = document.querySelector('#movie-week-input');
   const inputDay = document.querySelector('#movie-day-input');
   const inputGenre = document.querySelector('#movie-genre-input');
@@ -131,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // Evita o flicker na tela de login ao recarregar
   if (localStorage.getItem(LOCAL_AUTH_CACHE_KEY) === 'true') {
     appWrapper.classList.remove('is-hidden');
     loginSection.classList.add('is-hidden');
@@ -275,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================
-  // RECUPERAÇÃO DE SENHA (ESQUECI A SENHA)
+  // RECUPERAÇÃO DE SENHA
   // ==========================================
   btnOpenForgot.addEventListener('click', (e) => {
     e.preventDefault();
@@ -285,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     forgotFeedback.textContent = '';
     forgotFeedback.className = 'login-feedback';
 
-    // Preenche se o usuário já tiver digitado algo no login
     if (loginUser.value.trim()) {
       forgotEmail.value = loginUser.value.trim();
     }
@@ -325,6 +338,88 @@ document.addEventListener('DOMContentLoaded', () => {
         forgotFeedback.textContent = msg;
         forgotFeedback.className = "login-feedback is-error";
       });
+  });
+
+  // ==========================================
+  // PROCESSAMENTO DE IMAGEM (COLAR & COMPRIMIR)
+  // ==========================================
+  function processAndCompressImage(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 420; // Dimensão ideal para poster
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Converte para JPEG comprimido (~40-60KB em Base64)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.72);
+        setCoverPreview(compressedBase64);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setCoverPreview(base64OrUrl) {
+    if (base64OrUrl && base64OrUrl.trim()) {
+      inputCover.value = base64OrUrl;
+      pastePreviewImg.src = base64OrUrl;
+      pastePreviewWrapper.classList.remove('is-hidden');
+      pastePlaceholder.classList.add('is-hidden');
+    } else {
+      inputCover.value = '';
+      pastePreviewImg.src = '';
+      pastePreviewWrapper.classList.add('is-hidden');
+      pastePlaceholder.classList.remove('is-hidden');
+    }
+  }
+
+  function handleImagePaste(e) {
+    const clipboard = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
+    if (!clipboard || !clipboard.items) return;
+
+    for (const item of clipboard.items) {
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          processAndCompressImage(file);
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+  }
+
+  pasteZone.addEventListener('paste', handleImagePaste);
+  window.addEventListener('paste', (e) => {
+    if (movieFormModal.classList.contains('is-active')) {
+      handleImagePaste(e);
+    }
+  });
+
+  pasteZone.addEventListener('dblclick', () => movieFileInput.click());
+  movieFileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      processAndCompressImage(e.target.files[0]);
+    }
+  });
+
+  btnRemovePasted.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setCoverPreview('');
+    movieFileInput.value = '';
   });
 
   function triggerWelcomeBats() {
@@ -511,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formModalTitle.textContent = "Editar Filme";
       inputId.value = movie.id;
       inputTitle.value = movie.title;
-      inputCover.value = movie.cover || '';
+      setCoverPreview(movie.cover || '');
       inputWeek.value = movie.weekNumber || 1;
       inputDay.value = movie.day;
       inputGenre.value = movie.genre;
@@ -575,7 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
   btnOpenAddModal.addEventListener('click', () => {
     movieForm.reset();
     inputId.value = '';
-    inputCover.value = '';
+    setCoverPreview('');
+    movieFileInput.value = '';
     formModalTitle.textContent = "Novo Filme";
     updateSynopsisCounter();
     movieFormModal.classList.add('is-active');
