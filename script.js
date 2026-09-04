@@ -1,861 +1,489 @@
-:root {
-  --bg-body: #0b0813;
-  --bg-container: #140f24;
-  --bg-week: #1a1430;
-  --bg-card: #231b40;
-  --bg-card-hover: #2b224e;
-  --border-color: #3b2d6b;
-  --orange-primary: #ff6b00;
-  --orange-hover: #ff8533;
-  --orange-glow: rgba(255, 107, 0, 0.45);
-  --purple-accent: #9d4edd;
-  --purple-light: #c77dff;
-  --text-main: #f3f0fa;
-  --text-muted: #958cb3;
-  --danger-color: #ff3366;
-  --danger-hover: #ff1a53;
-  --danger-bg: #3f1d28;
-  --success-color: #00ff88;
-  --watched-bg: #1c1c22;
-  --watched-border: #2e2e38;
-  --watched-text: #71717a;
+const firebaseConfig = {
+  apiKey: "AIzaSyDryXEeO34ZzxFOAvEo1EPoFhKQTe3Bk0k",
+  authDomain: "maratona-halloween.firebaseapp.com",
+  projectId: "maratona-halloween",
+  storageBucket: "maratona-halloween.firebasestorage.app",
+  messagingSenderId: "883352584122",
+  appId: "1:883352584122:web:84d58a77eee563d2cfe783"
+};
+
+const WEEK_TITLES = {
+  1: "Origens & Tensão Moderna",
+  2: "Maldições, Espaço & Stop-Motion",
+  3: "Bonecos, Monstros & Aventura",
+  4: "Reta Final & Halloween"
+};
+
+const MAX_SYNOPSIS = 160;
+
+function parseWeekSearch(term) {
+  const clean = term.toLowerCase().trim();
+  const match = clean.match(/^semana\s*0*(\d+)$/);
+  return match ? parseInt(match[1], 10) : null;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+function groupMoviesByWeek(moviesList) {
+  const grouped = {};
+  moviesList.forEach(movie => {
+    const week = movie.weekNumber || 1;
+    if (!grouped[week]) grouped[week] = [];
+    grouped[week].push(movie);
+  });
+  return Object.keys(grouped).sort((a, b) => a - b).map(weekNum => ({
+    weekNumber: parseInt(weekNum, 10),
+    weekTitle: WEEK_TITLES[weekNum] || `Semana ${weekNum}`,
+    movies: grouped[weekNum]
+  }));
 }
 
-body {
-  background-color: var(--bg-body);
-  color: var(--text-main);
-  font-family: 'Inter', sans-serif;
-  min-height: 100vh;
-  padding: 1rem 0.75rem 2.5rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+/**
+ * [RECURSO TÉCNICO NECESSÁRIO]: 
+ * Tratamento de CORS para URLs remotas e fallback data URI SVG local para evitar quebra de layout.
+ */
+function resolveCoverUrl(movie) {
+  const titleDisplay = movie.title.split(' ')[0];
+  const fallbackSvg = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='750' viewBox='0 0 500 750'%3E%3Crect width='500' height='750' fill='%23140f24'/%3E%3Ctext x='50%25' y='48%25' fill='%23ff6b00' font-family='Arial' font-weight='bold' font-size='32' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(titleDisplay)}%3C/text%3E%3Ctext x='50%25' y='55%25' fill='%23ff6b00' font-size='48' text-anchor='middle' dominant-baseline='middle'%3E%F0%9F%8E%83%3C/text%3E%3C/svg%3E`;
 
-.is-hidden {
-  display: none;
-}
-
-.jumpscare-overlay {
-  position: fixed;
-  inset: 0;
-  background: #000000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 99999;
-  overflow: hidden;
-}
-
-.jumpscare-overlay.is-active {
-  display: flex;
-}
-
-.jumpscare-face {
-  font-size: 8rem;
-  animation: scarePulse 0.15s infinite alternate;
-  filter: drop-shadow(0 0 50px var(--danger-color));
-}
-
-@keyframes scarePulse {
-  0% { 
-    transform: scale(1) rotate(-3deg); 
-    filter: drop-shadow(0 0 40px var(--danger-color)); 
+  if (!movie.cover || movie.cover.trim() === '') {
+    return fallbackSvg;
   }
-  100% { 
-    transform: scale(1.3) rotate(4deg); 
-    filter: drop-shadow(0 0 80px #ffffff); 
+  const cleanCover = movie.cover.trim();
+  if (cleanCover.startsWith('http://') || cleanCover.startsWith('https://')) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(cleanCover)}&default=${encodeURIComponent(fallbackSvg)}`;
   }
+  return cleanCover;
 }
 
-.login-container {
-  width: 100%;
-  max-width: 420px;
-  animation: fadeIn 0.4s ease forwards;
-}
-
-.login-card {
-  background: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 1.8rem 1.25rem;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(157, 78, 221, 0.2);
-  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 1.25rem;
-}
-
-.login-icon {
-  font-size: 2.5rem;
-  display: block;
-  filter: drop-shadow(0 0 10px var(--orange-glow));
-  margin-bottom: 0.3rem;
-}
-
-.login-title {
-  font-family: 'Creepster', cursive;
-  font-size: 2rem;
-  color: var(--orange-primary);
-  letter-spacing: 1px;
-}
-
-.login-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.btn-submit-login {
-  width: 100%;
-  padding: 0.8rem;
-  font-size: 0.95rem;
-  margin-top: 0.75rem;
-}
-
-.login-feedback {
-  min-height: 1.2rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-align: center;
-  margin: 0.4rem 0 0.6rem;
-}
-
-.login-feedback.is-error {
-  color: var(--danger-color);
-}
-
-.login-feedback.is-success {
-  color: var(--success-color);
-}
-
-.login-card.is-shaking {
-  animation: shake 0.4s ease-in-out;
-  border-color: var(--danger-color);
-  box-shadow: 0 0 30px rgba(255, 51, 102, 0.6);
-}
-
-.login-card.is-success {
-  border-color: var(--success-color);
-  box-shadow: 0 0 35px rgba(0, 255, 136, 0.6);
-  transform: scale(1.02);
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-8px); }
-  40%, 80% { transform: translateX(8px); }
-}
-
-.app-wrapper {
-  width: 100%;
-  background-color: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 1.25rem 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  animation: fadeIn 0.4s ease forwards;
-}
-
-.header-top-bar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
-  margin-bottom: 0.5rem;
-}
-
-.btn-logout {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.55rem 0.9rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-.btn-logout:hover {
-  border-color: var(--danger-color);
-  color: #ffccd5;
-}
-
-.btn-primary-action {
-  background: var(--orange-primary);
-  color: #0b0813;
-  border: none;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 0.55rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.btn-primary-action:hover {
-  background: var(--orange-hover);
-  transform: translateY(-1px);
-}
-
-.app-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
-.main-title {
-  font-family: 'Creepster', cursive;
-  font-size: 2.2rem;
-  color: var(--orange-primary);
-  text-shadow: 0 0 15px var(--orange-glow);
-  letter-spacing: 1px;
-  line-height: 1.1;
-  margin-bottom: 0.4rem;
-}
-
-.subtitle {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.progress-section {
-  background: rgba(11, 8, 19, 0.95);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  margin-bottom: 1rem;
-  position: sticky;
-  top: 8px;
-  z-index: 10;
-  backdrop-filter: blur(8px);
-}
-
-.progress-labels {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--purple-light);
-  margin-bottom: 0.5rem;
-}
-
-.progress-bar-track {
-  width: 100%;
-  height: 12px;
-  background-color: #120e1e;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.progress-bar-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--purple-accent), var(--orange-primary));
-  box-shadow: 0 0 10px var(--orange-glow);
-  border-radius: 6px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-section {
-  margin-bottom: 1.5rem;
-}
-
-.search-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  font-size: 0.95rem;
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-#search-input {
-  width: 100%;
-  padding: 0.75rem 2.4rem 0.75rem 2.6rem;
-  background-color: var(--bg-week);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  color: var(--text-main);
-  font-family: inherit;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.25s, box-shadow 0.25s;
-}
-
-#search-input:focus {
-  border-color: var(--orange-primary);
-  box-shadow: 0 0 10px var(--orange-glow);
-}
-
-#search-input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.7;
-}
-
-.btn-clear-search {
-  position: absolute;
-  right: 0.8rem;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 1rem;
-  cursor: pointer;
-  display: none;
-  padding: 0.2rem 0.4rem;
-}
-
-.btn-clear-search.is-active {
-  display: block;
-}
-
-.btn-clear-search:hover {
-  color: var(--orange-primary);
-}
-
-.no-results {
-  text-align: center;
-  padding: 2.5rem 1rem;
-  color: var(--text-muted);
-  background-color: var(--bg-week);
-  border-radius: 12px;
-  border: 1px dashed var(--border-color);
-}
-
-.empty-state-subtitle {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--purple-light);
-}
-
-.week-container {
-  background-color: var(--bg-week);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  animation: fadeIn 0.35s ease forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.week-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px dashed var(--border-color);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.week-title {
-  font-family: 'Creepster', cursive;
-  font-size: 1.6rem;
-  color: var(--orange-primary);
-  letter-spacing: 0.5px;
-}
-
-.week-badge {
-  background: rgba(157, 78, 221, 0.15);
-  border: 1px solid var(--purple-accent);
-  color: var(--purple-light);
-  padding: 0.2rem 0.6rem;
-  border-radius: 14px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.movies-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-.movie-card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  transition: background-color 0.25s, border-color 0.25s;
-}
-
-.card-day-tag {
-  background: rgba(11, 8, 19, 0.85);
-  color: var(--orange-primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.3rem 0.6rem;
-  border-bottom-right-radius: 8px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  border-right: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.card-admin-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 3;
-  display: flex;
-  gap: 4px;
-  background: rgba(11, 8, 19, 0.85);
-  padding: 0.2rem 0.4rem;
-  border-bottom-left-radius: 8px;
-  border-left: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.btn-card-util {
-  background: transparent;
-  border: none;
-  font-size: 0.8rem;
-  cursor: pointer;
-  padding: 0.2rem;
-  line-height: 1;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-}
-
-.btn-card-util:hover {
-  opacity: 1;
-}
-
-.poster-container {
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  position: relative;
-  overflow: hidden;
-  background-color: #120e1e;
-}
-
-.poster-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease, filter 0.3s ease;
-}
-
-.card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-
-.genre-badge {
-  display: inline-block;
-  align-self: flex-start;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--purple-light);
-  background: rgba(157, 78, 221, 0.15);
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem;
-  margin-bottom: 0.4rem;
-}
-
-.movie-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 0.35rem;
-  line-height: 1.25;
-}
-
-.movie-synopsis {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin-bottom: 1rem;
-  flex-grow: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.button-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-top: auto;
-}
-
-.btn-action {
-  padding: 0.55rem 0.25rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--border-color);
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--text-muted);
-  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-}
-
-.btn-action.active-unwatched {
-  background-color: var(--danger-bg);
-  border-color: var(--danger-color);
-  color: #ffccd5;
-}
-
-.btn-action.active-watched {
-  background-color: var(--orange-primary);
-  border-color: var(--orange-primary);
-  color: #0c0a10;
-  font-weight: 700;
-  box-shadow: 0 0 8px var(--orange-glow);
-}
-
-.movie-card.is-watched {
-  background-color: var(--watched-bg);
-  border-color: var(--watched-border);
-}
-
-.movie-card.is-watched .poster-img {
-  filter: grayscale(100%) opacity(35%);
-}
-
-.movie-card.is-watched .movie-title {
-  color: var(--watched-text);
-  text-decoration: line-through;
-}
-
-.movie-card.is-watched .movie-synopsis,
-.movie-card.is-watched .card-day-tag,
-.movie-card.is-watched .genre-badge {
-  color: #52525b;
-  background: transparent;
-  border-color: transparent;
-}
-
-.load-more-container {
-  text-align: center;
-  margin-top: 1rem;
-}
-
-.load-more-container.is-hidden {
-  display: none;
-}
-
-.btn-load-more {
-  width: 100%;
-  background: transparent;
-  border: 2px dashed var(--orange-primary);
-  color: var(--orange-primary);
-  padding: 0.75rem;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(7, 5, 12, 0.85);
-  backdrop-filter: blur(8px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  padding: 1rem;
-}
-
-.modal-overlay.is-active {
-  display: flex;
-}
-
-.modal-content {
-  background: var(--bg-week);
-  border: 2px solid var(--orange-primary);
-  border-radius: 16px;
-  padding: 1.75rem;
-  width: 100%;
-  max-width: 440px;
-  text-align: center;
-}
-
-.form-modal-content {
-  background: #161028;
-  border: 1px solid var(--purple-accent);
-  box-shadow: 0 0 25px rgba(157, 78, 221, 0.25);
-  text-align: left;
-}
-
-.modal-icon {
-  font-size: 2.8rem;
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.modal-title {
-  font-family: 'Creepster', cursive;
-  font-size: 2.2rem;
-  color: var(--orange-primary);
-  margin-bottom: 1rem;
-}
-
-.modal-desc {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.modal-btn {
-  margin-top: 1.25rem;
-  width: 100%;
-  background: var(--orange-primary);
-  color: #0b0813;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.delete-modal-content {
-  border-color: var(--danger-color);
-  box-shadow: 0 0 25px rgba(255, 51, 102, 0.3);
-  max-width: 380px;
-}
-
-.delete-title {
-  color: var(--danger-color);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.delete-modal-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.btn-danger-action {
-  background: var(--danger-color);
-  color: #ffffff;
-  border: none;
-  padding: 0.65rem 1rem;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-.btn-danger-action:hover {
-  background: var(--danger-hover);
-  transform: translateY(-1px);
-}
-
-.form-group {
-  margin-bottom: 1.1rem;
-}
-
-.form-group label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--purple-light);
-  margin-bottom: 0.4rem;
-}
-
-.form-group input, 
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 0.75rem 0.9rem;
-  background-color: #0e0a1a;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-main);
-  font-family: inherit;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-}
-
-.form-group select {
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ff6b00' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: calc(100% - 12px) center;
-  padding-right: 2rem;
-}
-
-.form-group select option {
-  background-color: #161028;
-  color: var(--text-main);
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  border-color: var(--orange-primary);
-  box-shadow: 0 0 10px var(--orange-glow);
-  background-color: #130d24;
-}
-
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.label-with-counter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.4rem;
-}
-
-.label-with-counter label {
-  margin-bottom: 0;
-}
-
-.char-counter {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.char-counter.limit-reached {
-  color: var(--orange-primary);
-  font-weight: 700;
-}
-
-.form-group textarea {
-  resize: none;
-  min-height: 80px;
-}
-
-.form-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-@media (min-width: 640px) {
-  .movies-grid {
-    grid-template-columns: repeat(2, 1fr);
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicialização segura com verificação explícita do SDK do Firebase
+  if (typeof firebase === 'undefined') {
+    console.error("Firebase SDK não carregou! Verifique os scripts no index.html.");
+    return;
   }
 
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1.6fr;
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const loginSection = document.querySelector('#login-section');
+  const loginCard = document.querySelector('#login-card');
+  const loginForm = document.querySelector('#login-form');
+  const loginUser = document.querySelector('#login-user');
+  const loginPass = document.querySelector('#login-pass');
+  const loginFeedback = document.querySelector('#login-feedback');
+  const jumpscareOverlay = document.querySelector('#jumpscare-overlay');
+  const appWrapper = document.querySelector('#app-wrapper');
+  const btnLogout = document.querySelector('#btn-logout');
+
+  const weeksContainer = document.querySelector('#weeks-container');
+  const btnLoadMore = document.querySelector('#btn-load-more');
+  const loadMoreWrapper = document.querySelector('#load-more-wrapper');
+  const progressBar = document.querySelector('#progress-bar');
+  const progressText = document.querySelector('#progress-text');
+  const victoryModal = document.querySelector('#victory-modal');
+  const btnCloseModal = document.querySelector('#btn-close-modal');
+  const searchInput = document.querySelector('#search-input');
+  const btnClearSearch = document.querySelector('#btn-clear-search');
+
+  const movieFormModal = document.querySelector('#movie-form-modal');
+  const movieForm = document.querySelector('#movie-form');
+  const btnOpenAddModal = document.querySelector('#btn-open-add-modal');
+  const btnCancelForm = document.querySelector('#btn-cancel-form');
+  const formModalTitle = document.querySelector('#form-modal-title');
+
+  const inputId = document.querySelector('#movie-id');
+  const inputTitle = document.querySelector('#movie-title-input');
+  const inputCover = document.querySelector('#movie-cover-input');
+  const inputWeek = document.querySelector('#movie-week-input');
+  const inputDay = document.querySelector('#movie-day-input');
+  const inputGenre = document.querySelector('#movie-genre-input');
+  const inputSynopsis = document.querySelector('#movie-synopsis-input');
+  const synopsisCounter = document.querySelector('#synopsis-counter');
+
+  const deleteModal = document.querySelector('#delete-confirm-modal');
+  const deleteModalText = document.querySelector('#delete-modal-text');
+  const btnCancelDelete = document.querySelector('#btn-cancel-delete');
+  const btnConfirmDelete = document.querySelector('#btn-confirm-delete');
+  
+  let currentMovies = [];
+  let visibleWeeks = 1;
+  let searchQuery = '';
+  let movieToDeleteId = null;
+
+  // ==========================================
+  // AUTENTICAÇÃO COM FIREBASE AUTH
+  // ==========================================
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      loginSection.classList.add('is-hidden');
+      appWrapper.classList.remove('is-hidden');
+      listenToFirestoreMovies();
+    } else {
+      loginSection.classList.remove('is-hidden');
+      appWrapper.classList.add('is-hidden');
+    }
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = loginUser.value.trim();
+    const pass = loginPass.value.trim();
+
+    auth.signInWithEmailAndPassword(email, pass)
+      .then(() => {
+        loginFeedback.textContent = "Acesso concedido... Bem-vindo(a) ao Covil! 🦇";
+        loginFeedback.className = "login-feedback is-success";
+        loginCard.classList.add('is-success');
+        triggerWelcomeBats();
+
+        setTimeout(() => {
+          loginCard.classList.remove('is-success');
+          loginFeedback.textContent = "";
+          loginFeedback.className = "login-feedback";
+          loginForm.reset();
+        }, 1200);
+      })
+      .catch((error) => {
+        console.warn("Falha no login:", error.code, error.message);
+        loginFeedback.textContent = "CREDENCIAL INVÁLIDA! AS ALMAS REJEITAM VOCÊ! ☠️";
+        loginFeedback.className = "login-feedback is-error";
+        loginCard.classList.add('is-shaking');
+        jumpscareOverlay.classList.add('is-active');
+
+        setTimeout(() => jumpscareOverlay.classList.remove('is-active'), 1400);
+        setTimeout(() => loginCard.classList.remove('is-shaking'), 600);
+      });
+  });
+
+  btnLogout.addEventListener('click', () => {
+    auth.signOut();
+  });
+
+  function triggerWelcomeBats() {
+    if (typeof confetti !== 'function') return;
+    confetti({
+      particleCount: 80,
+      spread: 100,
+      origin: { y: 0.6 },
+      colors: ['#00ff88', '#9d4edd', '#ff6b00', '#0b0813']
+    });
   }
 
-  .btn-load-more {
-    width: auto;
-    padding: 0.8rem 2rem;
-    border-radius: 30px;
+  // ==========================================
+  // FIRESTORE EM TEMPO REAL
+  // ==========================================
+  function listenToFirestoreMovies() {
+    db.collection('movies').onSnapshot((snapshot) => {
+      currentMovies = [];
+      snapshot.forEach(doc => {
+        currentMovies.push({ id: doc.id, ...doc.data() });
+      });
+      renderApp();
+    }, (error) => {
+      console.error("Erro ao sincronizar com Firestore:", error);
+    });
   }
 
-  .jumpscare-face {
-    font-size: 15rem;
-  }
-}
+  function updateSynopsisCounter() {
+    const currentLength = inputSynopsis.value.length;
+    synopsisCounter.textContent = `${currentLength} / ${MAX_SYNOPSIS}`;
 
-@media (min-width: 1024px) {
-  body {
-    padding: 2.5rem 1rem 4rem;
-    align-items: flex-start;
-  }
-
-  .app-wrapper {
-    max-width: 1150px;
-    padding: 2.5rem 2rem;
-    border-radius: 20px;
+    if (currentLength >= MAX_SYNOPSIS) {
+      synopsisCounter.classList.add('limit-reached');
+    } else {
+      synopsisCounter.classList.remove('limit-reached');
+    }
   }
 
-  .main-title {
-    font-size: 3.5rem;
-    margin-bottom: 0.5rem;
+  inputSynopsis.addEventListener('input', updateSynopsisCounter);
+
+  // ==========================================
+  // RENDERIZAÇÃO
+  // ==========================================
+  function renderApp() {
+    weeksContainer.replaceChildren();
+
+    const marathonData = groupMoviesByWeek(currentMovies);
+    const term = searchQuery.toLowerCase().trim();
+    const targetWeek = parseWeekSearch(term);
+
+    if (currentMovies.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'no-results';
+      emptyDiv.innerHTML = `
+        <p>Nenhum filme cadastrado na maratona ainda 🎃</p>
+        <p class="empty-state-subtitle">Clique no botão <strong>"Novo Filme ➕"</strong> acima para começar!</p>
+      `;
+      weeksContainer.appendChild(emptyDiv);
+      loadMoreWrapper.classList.add('is-hidden');
+      updateProgress(0, 0);
+      return;
+    }
+
+    if (term !== '') {
+      loadMoreWrapper.classList.add('is-hidden');
+    } else {
+      if (visibleWeeks >= marathonData.length) {
+        loadMoreWrapper.classList.add('is-hidden');
+      } else {
+        loadMoreWrapper.classList.remove('is-hidden');
+      }
+    }
+
+    let totalMatches = 0;
+    let watchedCount = 0;
+
+    currentMovies.forEach(m => {
+      if (m.watched) watchedCount++;
+    });
+
+    marathonData.forEach((week, index) => {
+      if (term === '' && index >= visibleWeeks) return;
+
+      let filteredMovies = week.movies;
+
+      if (term !== '') {
+        if (targetWeek !== null) {
+          if (week.weekNumber !== targetWeek) return;
+        } else {
+          filteredMovies = week.movies.filter(movie => 
+            movie.title.toLowerCase().includes(term) ||
+            movie.genre.toLowerCase().includes(term)
+          );
+          if (filteredMovies.length === 0) return;
+        }
+      }
+
+      totalMatches += filteredMovies.length;
+
+      const weekEl = document.createElement('section');
+      weekEl.className = 'week-container';
+
+      weekEl.innerHTML = `
+        <div class="week-header">
+          <h2 class="week-title">Semana 0${week.weekNumber}: ${week.weekTitle}</h2>
+          <span class="week-badge">${filteredMovies.length} Filme(s)</span>
+        </div>
+        <div class="movies-grid"></div>
+      `;
+
+      const grid = weekEl.querySelector('.movies-grid');
+
+      filteredMovies.forEach(movie => {
+        const isWatched = Boolean(movie.watched);
+        const resolvedCover = resolveCoverUrl(movie);
+
+        const card = document.createElement('article');
+        card.className = `movie-card ${isWatched ? 'is-watched' : ''}`;
+        card.id = `card-${movie.id}`;
+
+        card.innerHTML = `
+          <span class="card-day-tag">📅 ${movie.day}</span>
+          <div class="card-admin-actions">
+            <button type="button" class="btn-card-util btn-edit-movie" data-id="${movie.id}" title="Editar Filme">✏️</button>
+            <button type="button" class="btn-card-util btn-delete-movie" data-id="${movie.id}" title="Excluir Filme">🗑️</button>
+          </div>
+          <div class="poster-container">
+            <img 
+              src="${resolvedCover}" 
+              alt="Poster de ${movie.title}" 
+              class="poster-img" 
+              loading="lazy"
+              referrerpolicy="no-referrer"
+            >
+          </div>
+          <div class="card-body">
+            <span class="genre-badge">${movie.genre}</span>
+            <h3 class="movie-title">${movie.title}</h3>
+            <p class="movie-synopsis">${movie.synopsis}</p>
+            <div class="button-group">
+              <button type="button" class="btn-action btn-watched ${isWatched ? 'active-watched' : ''}" data-id="${movie.id}">
+                Assisti ✔
+              </button>
+              <button type="button" class="btn-action btn-unwatched ${!isWatched ? 'active-unwatched' : ''}" data-id="${movie.id}">
+                Não assisti ✕
+              </button>
+            </div>
+          </div>
+        `;
+
+        const imgEl = card.querySelector('.poster-img');
+        imgEl.addEventListener('error', () => {
+          imgEl.src = resolveCoverUrl({ title: movie.title, cover: '' });
+        }, { once: true });
+
+        grid.appendChild(card);
+      });
+
+      weeksContainer.appendChild(weekEl);
+    });
+
+    if (term !== '' && totalMatches === 0) {
+      const notFoundDiv = document.createElement('div');
+      notFoundDiv.className = 'no-results';
+      notFoundDiv.innerHTML = `<p>Nenhum filme ou semana encontrada para "<strong>${searchQuery}</strong>" 🎃</p>`;
+      weeksContainer.appendChild(notFoundDiv);
+    }
+
+    updateProgress(watchedCount, currentMovies.length);
   }
 
-  .subtitle {
-    font-size: 1rem;
+  // ==========================================
+  // OPERAÇÕES DO FIRESTORE (CRUD + STATUS)
+  // ==========================================
+  weeksContainer.addEventListener('click', (e) => {
+    const btnAction = e.target.closest('.btn-action');
+    if (btnAction) {
+      const movieId = btnAction.dataset.id;
+      const isWatched = btnAction.classList.contains('btn-watched');
+      db.collection('movies').doc(movieId).update({ watched: isWatched });
+      return;
+    }
+
+    const btnEdit = e.target.closest('.btn-edit-movie');
+    if (btnEdit) {
+      const id = btnEdit.dataset.id;
+      const movie = currentMovies.find(m => m.id === id);
+      if (!movie) return;
+
+      formModalTitle.textContent = "Editar Filme";
+      inputId.value = movie.id;
+      inputTitle.value = movie.title;
+      inputCover.value = movie.cover || '';
+      inputWeek.value = movie.weekNumber || 1;
+      inputDay.value = movie.day;
+      inputGenre.value = movie.genre;
+      inputSynopsis.value = movie.synopsis;
+
+      updateSynopsisCounter();
+      movieFormModal.classList.add('is-active');
+      return;
+    }
+
+    const btnDelete = e.target.closest('.btn-delete-movie');
+    if (btnDelete) {
+      const id = btnDelete.dataset.id;
+      const movie = currentMovies.find(m => m.id === id);
+      if (!movie) return;
+
+      movieToDeleteId = id;
+      deleteModalText.innerHTML = `Tem certeza que deseja remover <strong>"${movie.title}"</strong> da maratona?`;
+      deleteModal.classList.add('is-active');
+    }
+  });
+
+  btnCancelDelete.addEventListener('click', () => {
+    movieToDeleteId = null;
+    deleteModal.classList.remove('is-active');
+  });
+
+  btnConfirmDelete.addEventListener('click', () => {
+    if (!movieToDeleteId) return;
+    db.collection('movies').doc(movieToDeleteId).delete()
+      .then(() => {
+        deleteModal.classList.remove('is-active');
+        movieToDeleteId = null;
+      });
+  });
+
+  movieForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = inputId.value;
+
+    const movieData = {
+      title: inputTitle.value.trim(),
+      cover: inputCover.value.trim(),
+      weekNumber: parseInt(inputWeek.value, 10),
+      day: inputDay.value.trim(),
+      genre: inputGenre.value.trim(),
+      synopsis: inputSynopsis.value.trim()
+    };
+
+    if (id) {
+      db.collection('movies').doc(id).update(movieData)
+        .then(() => movieFormModal.classList.remove('is-active'));
+    } else {
+      movieData.watched = false;
+      movieData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection('movies').add(movieData)
+        .then(() => movieFormModal.classList.remove('is-active'));
+    }
+  });
+
+  btnOpenAddModal.addEventListener('click', () => {
+    movieForm.reset();
+    inputId.value = '';
+    inputCover.value = '';
+    formModalTitle.textContent = "Novo Filme";
+    updateSynopsisCounter();
+    movieFormModal.classList.add('is-active');
+  });
+
+  btnCancelForm.addEventListener('click', () => {
+    movieFormModal.classList.remove('is-active');
+  });
+
+  function updateProgress(watchedCount, totalMovies) {
+    const percent = totalMovies > 0 ? Math.round((watchedCount / totalMovies) * 100) : 0;
+
+    progressBar.style.width = `${percent}%`;
+    progressText.textContent = `${watchedCount} / ${totalMovies} assistidos (${percent}%)`;
+
+    if (totalMovies > 0 && watchedCount === totalMovies) {
+      triggerVictoryConfetti();
+      setTimeout(() => {
+        victoryModal.classList.add('is-active');
+      }, 1000);
+    }
   }
 
-  .week-container {
-    padding: 1.8rem;
-    border-radius: 16px;
-  }
+  searchInput.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    if (searchQuery) {
+      btnClearSearch.classList.add('is-active');
+    } else {
+      btnClearSearch.classList.remove('is-active');
+    }
+    renderApp();
+  });
 
-  .week-title {
-    font-size: 2.2rem;
-  }
+  btnClearSearch.addEventListener('click', () => {
+    searchInput.value = '';
+    searchQuery = '';
+    btnClearSearch.classList.remove('is-active');
+    renderApp();
+    searchInput.focus();
+  });
 
-  .movies-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-  }
+  btnLoadMore.addEventListener('click', () => {
+    const groups = groupMoviesByWeek(currentMovies);
+    if (visibleWeeks < groups.length) {
+      visibleWeeks++;
+      renderApp();
+    }
+  });
 
-  .btn-load-more:hover {
-    background: var(--orange-primary);
-    color: #0b0813;
-    box-shadow: 0 0 18px var(--orange-glow);
-    transform: translateY(-2px);
-  }
+  btnCloseModal.addEventListener('click', () => {
+    victoryModal.classList.remove('is-active');
+  });
 
-  .movie-card:hover {
-    background-color: var(--bg-card-hover);
-    border-color: var(--purple-accent);
-  }
+  function triggerVictoryConfetti() {
+    if (typeof confetti !== 'function') return;
+    const count = 180;
+    const defaults = { origin: { y: 0.7 } };
 
-  .movie-card:hover .poster-img {
-    transform: scale(1.03);
-  }
+    function fire(particleRatio, opts) {
+      confetti(Object.assign({}, defaults, opts, {
+        particleCount: Math.floor(count * particleRatio)
+      }));
+    }
 
-  .modal-btn {
-    width: auto;
-    padding: 0.75rem 2rem;
+    fire(0.25, { spread: 26, startVelocity: 55, colors: ['#ff6b00', '#9d4edd'] });
+    fire(0.2, { spread: 60, colors: ['#ffffff', '#ff6b00'] });
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#9d4edd', '#ff8533'] });
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2, colors: ['#c77dff'] });
+    fire(0.1, { spread: 120, startVelocity: 45, colors: ['#ff6b00'] });
   }
-}
+});
