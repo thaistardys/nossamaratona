@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const jumpscareOverlay = document.querySelector('#jumpscare-overlay');
   const appWrapper = document.querySelector('#app-wrapper');
   const btnLogout = document.querySelector('#btn-logout');
+  const greetingUsername = document.querySelector('#greeting-username');
 
   // Modal Cadastro
   const btnOpenRegister = document.querySelector('#btn-open-register');
@@ -144,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // Alternador de Visibilidade da Senha (Olhinho Fechado / Aberto)
+  // Alternador de Visibilidade da Senha
   document.querySelectorAll('.btn-toggle-pass').forEach(button => {
     button.addEventListener('click', (e) => {
       e.preventDefault();
@@ -171,6 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
   auth.onAuthStateChanged((user) => {
     if (user) {
       localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
+      
+      // Formata nome do usuário a partir do DisplayName ou do E-mail
+      const username = user.displayName 
+        ? user.displayName 
+        : (user.email ? user.email.split('@')[0] : 'Criatura');
+      greetingUsername.textContent = username;
+
       loginSection.classList.add('is-hidden');
       registerModal.classList.remove('is-active');
       forgotModal.classList.remove('is-active');
