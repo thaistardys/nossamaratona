@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.querySelector('#search-input');
   const btnClearSearch = document.querySelector('#btn-clear-search');
 
-  // Formulário de Filme & Dropzone de Imagem Colada
+  // Formulário de Filme & Dropzone
   const movieFormModal = document.querySelector('#movie-form-modal');
   const movieForm = document.querySelector('#movie-form');
   const btnOpenAddModal = document.querySelector('#btn-open-add-modal');
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // Alternador de Visibilidade da Senha (Olho Fechado / Aberto)
+  // Alternador de Visibilidade da Senha
   document.querySelectorAll('.btn-toggle-pass').forEach(button => {
     button.addEventListener('click', (e) => {
       e.preventDefault();
@@ -170,14 +170,28 @@ document.addEventListener('DOMContentLoaded', () => {
     loginSection.classList.add('is-hidden');
   }
 
-  auth.onAuthStateChanged((user) => {
+  // ==========================================
+  // MONITORAMENTO DE AUTENTICAÇÃO
+  // ==========================================
+  auth.onAuthStateChanged(async (user) => {
     if (user) {
       localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
-      
-      const username = user.displayName 
-        ? user.displayName 
-        : (user.email ? user.email.split('@')[0] : 'Criatura');
-      greetingUsername.textContent = username;
+
+      let finalName = user.displayName || localStorage.getItem('halloween_user_name');
+
+      if (!finalName) {
+        try {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (userDoc.exists && userDoc.data().name) {
+            finalName = userDoc.data().name;
+            localStorage.setItem('halloween_user_name', finalName);
+          }
+        } catch (err) {
+          console.warn("Não foi possível buscar usuário no Firestore:", err);
+        }
+      }
+
+      greetingUsername.textContent = finalName || (user.email ? user.email.split('@')[0] : 'Criatura');
 
       loginSection.classList.add('is-hidden');
       registerModal.classList.remove('is-active');
@@ -186,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       listenToFirestoreMovies();
     } else {
       localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
+      localStorage.removeItem('halloween_user_name');
       appWrapper.classList.add('is-hidden');
       loginSection.classList.remove('is-hidden');
     }
@@ -225,11 +240,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnLogout.addEventListener('click', () => {
     localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
+    localStorage.removeItem('halloween_user_name');
     auth.signOut();
   });
 
   // ==========================================
-  // CADASTRO / CRIAR CONTA (COM NOME)
+  // CADASTRO / CRIAR CONTA (COM ASYNC/AWAIT)
   // ==========================================
   function validatePassword(pass) {
     const hasUpper = /[A-Z]/.test(pass);
@@ -276,11 +292,17 @@ document.addEventListener('DOMContentLoaded', () => {
     registerModal.classList.remove('is-active');
   });
 
-  registerForm.addEventListener('submit', (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = regName.value.trim();
     const email = regEmail.value.trim();
     const pass = regPassword.value.trim();
+
+    if (!name) {
+      registerFeedback.textContent = "Digite seu nome ou alcunha!";
+      registerFeedback.className = "login-feedback is-error";
+      return;
+    }
 
     if (!validatePassword(pass)) {
       registerFeedback.textContent = "A senha não cumpre todos os rituais exigidos!";
@@ -291,33 +313,40 @@ document.addEventListener('DOMContentLoaded', () => {
     registerFeedback.textContent = "Invocando novo membro nas sombras...";
     registerFeedback.className = "login-feedback";
 
-    auth.createUserWithEmailAndPassword(email, pass)
-      .then((userCredential) => {
-        return userCredential.user.updateProfile({
-          displayName: name
-        });
-      })
-      .then(() => {
-        greetingUsername.textContent = name;
-        registerFeedback.textContent = `Pacto selado, ${name}! Entrando no covil...`;
-        registerFeedback.className = "login-feedback is-success";
-        triggerWelcomeBats();
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+      const user = userCredential.user;
 
-        setTimeout(() => {
-          registerModal.classList.remove('is-active');
-          registerForm.reset();
-        }, 1200);
-      })
-      .catch((error) => {
-        let msg = "Erro ao criar conta. Tente novamente.";
-        if (error.code === 'auth/email-already-in-use') {
-          msg = "Este e-mail já pertence a outra criatura!";
-        } else if (error.code === 'auth/invalid-email') {
-          msg = "O formato do e-mail é inválido!";
-        }
-        registerFeedback.textContent = msg;
-        registerFeedback.className = "login-feedback is-error";
+      await user.updateProfile({ displayName: name });
+
+      await db.collection('users').doc(user.uid).set({
+        name: name,
+        email: email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+
+      localStorage.setItem('halloween_user_name', name);
+      greetingUsername.textContent = name;
+
+      registerFeedback.textContent = `Pacto selado, ${name}! Entrando no covil...`;
+      registerFeedback.className = "login-feedback is-success";
+      triggerWelcomeBats();
+
+      setTimeout(() => {
+        registerModal.classList.remove('is-active');
+        registerForm.reset();
+      }, 1200);
+
+    } catch (error) {
+      let msg = "Erro ao criar conta. Tente novamente.";
+      if (error.code === 'auth/email-already-in-use') {
+        msg = "Este e-mail já pertence a outra criatura!";
+      } else if (error.code === 'auth/invalid-email') {
+        msg = "O formato do e-mail é inválido!";
+      }
+      registerFeedback.textContent = msg;
+      registerFeedback.className = "login-feedback is-error";
+    }
   });
 
   // ==========================================
