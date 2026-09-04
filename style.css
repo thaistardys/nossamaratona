@@ -227,7 +227,6 @@ body {
   animation: fadeIn 0.3s ease forwards;
 }
 
-/* Barra Superior: Saudação à Esquerda & Logout à Direita */
 .header-top-bar {
   display: flex;
   justify-content: space-between;
@@ -991,15 +990,21 @@ body {
   padding: 1rem;
 }
 
+.paste-zone[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  caret-color: transparent;
+}
+
+.paste-zone * {
+  pointer-events: auto;
+}
+
 .paste-zone:focus,
 .paste-zone:hover {
   border-color: var(--orange-primary);
   background-color: #130d24;
   box-shadow: 0 0 12px var(--orange-glow);
-}
-
-.file-hidden-input {
-  display: none;
 }
 
 .paste-zone-placeholder {
