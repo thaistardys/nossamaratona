@@ -889,6 +889,105 @@ body {
   cursor: pointer;
 }
 
+/* =========================================
+   ÁREA DE COLAR IMAGEM (CLIPBOARD DROPZONE)
+   ========================================= */
+.paste-zone {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  background-color: #0e0a1a;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
+  padding: 1rem;
+}
+
+.paste-zone:focus,
+.paste-zone:hover {
+  border-color: var(--orange-primary);
+  background-color: #130d24;
+  box-shadow: 0 0 12px var(--orange-glow);
+}
+
+.file-hidden-input {
+  display: none;
+}
+
+.paste-zone-placeholder {
+  text-align: center;
+  pointer-events: none;
+}
+
+.paste-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.paste-main-text {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.paste-main-text strong {
+  color: var(--orange-primary);
+}
+
+.paste-sub-text {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.paste-preview-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 160px;
+  width: 100%;
+}
+
+.paste-preview-img {
+  max-height: 150px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--purple-accent);
+  box-shadow: 0 0 10px rgba(157, 78, 221, 0.3);
+}
+
+.btn-remove-pasted {
+  position: absolute;
+  top: -6px;
+  right: 15%;
+  background: var(--danger-color);
+  color: #fff;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255, 51, 102, 0.5);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.btn-remove-pasted:hover {
+  background: var(--danger-hover);
+  transform: scale(1.15);
+}
+
 /* Jumpscare */
 .jumpscare-overlay {
   position: fixed;
