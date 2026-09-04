@@ -118,6 +118,29 @@ body {
   text-shadow: 0 0 8px var(--orange-glow);
 }
 
+.forgot-pass-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}
+
+.btn-forgot-link {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, text-shadow 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-forgot-link:hover {
+  color: var(--orange-primary);
+  text-shadow: 0 0 6px var(--orange-glow);
+}
+
 .login-feedback {
   min-height: 1.2rem;
   font-size: 0.8rem;
@@ -633,7 +656,7 @@ body {
 }
 
 .modal-overlay.is-active {
-  display: flex;
+  display: flex !important;
 }
 
 .modal-content {
@@ -658,13 +681,19 @@ body {
   max-width: 460px;
 }
 
-.register-title {
+.forgot-modal-content {
+  max-width: 440px;
+}
+
+.register-title,
+.forgot-title {
   text-align: center;
   font-size: 2rem;
   margin-bottom: 0.3rem;
 }
 
-.register-desc {
+.register-desc,
+.forgot-desc {
   text-align: center;
   font-size: 0.85rem;
   margin-bottom: 1.25rem;
