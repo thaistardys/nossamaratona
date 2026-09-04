@@ -11,20 +11,25 @@
   
   <link rel="stylesheet" href="style.css">
 
+  <!-- Scripts Firebase Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
 
+  <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
   
+  <!-- Script Principal da Aplicação -->
   <script src="script.js" defer></script>
 </head>
 <body>
 
+  <!-- Overlay de Jumpscare -->
   <div id="jumpscare-overlay" class="jumpscare-overlay">
     <div class="jumpscare-face">👹</div>
   </div>
 
+  <!-- Tela de Login Temática -->
   <section id="login-section" class="login-container is-hidden">
     <div class="login-card" id="login-card">
       <header class="login-header">
@@ -58,16 +63,23 @@
     </div>
   </section>
 
+  <!-- Aplicação Principal -->
   <div id="app-wrapper" class="app-wrapper is-hidden">
+    <!-- Barra Superior: Saudação temática na esquerda e Sair na direita -->
     <header class="app-header">
       <div class="header-top-bar">
-        <button type="button" class="btn-primary-action" id="btn-open-add-modal">Novo Filme ➕</button>
+        <div class="user-greeting" id="user-greeting">
+          <span class="greeting-icon">🦇</span>
+          <span class="greeting-text">Bem-vindo(a) ao Covil, <strong id="greeting-username">Criatura</strong> 🕯️</span>
+        </div>
         <button type="button" class="btn-logout" id="btn-logout">Sair 🚪</button>
       </div>
+
       <h1 class="main-title">MARATONA DE HALLOWEEN</h1>
       <p class="subtitle">Quartas, Sextas, Sábados & Domingos • Painel Interativo</p>
     </header>
 
+    <!-- Barra de Progresso Geral -->
     <section class="progress-section">
       <div class="progress-labels">
         <span>Progresso Geral</span>
@@ -78,7 +90,8 @@
       </div>
     </section>
 
-    <section class="search-section">
+    <!-- Barra de Controles: Busca integrada lado a lado com o botão Novo Filme -->
+    <section class="controls-section">
       <div class="search-input-wrapper">
         <span class="search-icon">🔍</span>
         <input 
@@ -89,6 +102,9 @@
         >
         <button type="button" id="btn-clear-search" class="btn-clear-search" aria-label="Limpar busca">✕</button>
       </div>
+      <button type="button" class="btn-primary-action btn-add-movie-highlight" id="btn-open-add-modal">
+        <span>Novo Filme</span> ➕
+      </button>
     </section>
 
     <main id="weeks-container" class="weeks-container"></main>
@@ -99,6 +115,7 @@
       </button>
     </div>
 
+    <!-- Rodapé Temático -->
     <footer class="app-footer">
       <div class="footer-divider"></div>
       <p class="footer-text">
@@ -108,6 +125,7 @@
     </footer>
   </div>
 
+  <!-- Modal de Criação / Edição (CRUD) -->
   <div class="modal-overlay" id="movie-form-modal">
     <div class="modal-content form-modal-content">
       <h2 class="modal-title" id="form-modal-title">Novo Filme</h2>
@@ -181,6 +199,7 @@
     </div>
   </div>
 
+  <!-- Modal Customizado de Confirmação de Exclusão -->
   <div class="modal-overlay" id="delete-confirm-modal">
     <div class="modal-content delete-modal-content">
       <span class="modal-icon">⚠️💀</span>
@@ -195,6 +214,7 @@
     </div>
   </div>
 
+  <!-- Modal de Cadastro / Criar Conta -->
   <div class="modal-overlay" id="register-modal">
     <div class="modal-content form-modal-content register-modal-content">
       <span class="modal-icon">📜🕯️</span>
@@ -231,6 +251,7 @@
     </div>
   </div>
 
+  <!-- Modal de Recuperação de Senha -->
   <div class="modal-overlay" id="forgot-modal">
     <div class="modal-content form-modal-content forgot-modal-content">
       <span class="modal-icon">🔮🕯️</span>
@@ -255,6 +276,7 @@
     </div>
   </div>
 
+  <!-- Modal Final Comemorativo -->
   <div class="modal-overlay" id="victory-modal">
     <div class="modal-content">
       <span class="modal-icon">🏆🎃👻</span>
