@@ -37,10 +37,6 @@ function groupMoviesByWeek(moviesList) {
   }));
 }
 
-/**
- * [RECURSO TÉCNICO NECESSÁRIO]: 
- * Tratamento de CORS para URLs remotas e fallback data URI SVG local para evitar quebra de layout.
- */
 function resolveCoverUrl(movie) {
   const titleDisplay = movie.title.split(' ')[0];
   const fallbackSvg = `data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='750' viewBox='0 0 500 750'%3E%3Crect width='500' height='750' fill='%23140f24'/%3E%3Ctext x='50%25' y='48%25' fill='%23ff6b00' font-family='Arial' font-weight='bold' font-size='32' text-anchor='middle' dominant-baseline='middle'%3E${encodeURIComponent(titleDisplay)}%3C/text%3E%3Ctext x='50%25' y='55%25' fill='%23ff6b00' font-size='48' text-anchor='middle' dominant-baseline='middle'%3E%F0%9F%8E%83%3C/text%3E%3C/svg%3E`;
@@ -77,6 +73,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const appWrapper = document.querySelector('#app-wrapper');
   const btnLogout = document.querySelector('#btn-logout');
 
+  // Elementos do Modal de Cadastro
+  const btnOpenRegister = document.querySelector('#btn-open-register');
+  const registerModal = document.querySelector('#register-modal');
+  const registerForm = document.querySelector('#register-form');
+  const regEmail = document.querySelector('#reg-email');
+  const regPassword = document.querySelector('#reg-password');
+  const registerFeedback = document.querySelector('#register-feedback');
+  const btnCancelRegister = document.querySelector('#btn-cancel-register');
+
+  const ruleUpper = document.querySelector('#rule-upper');
+  const ruleLower = document.querySelector('#rule-lower');
+  const ruleSpecial = document.querySelector('#rule-special');
+  const ruleLength = document.querySelector('#rule-length');
+
   const weeksContainer = document.querySelector('#weeks-container');
   const btnLoadMore = document.querySelector('#btn-load-more');
   const loadMoreWrapper = document.querySelector('#load-more-wrapper');
@@ -112,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let movieToDeleteId = null;
 
-  // Evita o flicker na tela de login ao dar F5
+  // Evita o flicker na tela de login ao atualizar a página
   if (localStorage.getItem(LOCAL_AUTH_CACHE_KEY) === 'true') {
     appWrapper.classList.remove('is-hidden');
     loginSection.classList.add('is-hidden');
@@ -122,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (user) {
       localStorage.setItem(LOCAL_AUTH_CACHE_KEY, 'true');
       loginSection.classList.add('is-hidden');
+      registerModal.classList.remove('is-active');
       appWrapper.classList.remove('is-hidden');
       listenToFirestoreMovies();
     } else {
@@ -131,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Login
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = loginUser.value.trim();
@@ -165,6 +177,87 @@ document.addEventListener('DOMContentLoaded', () => {
   btnLogout.addEventListener('click', () => {
     localStorage.removeItem(LOCAL_AUTH_CACHE_KEY);
     auth.signOut();
+  });
+
+  // ==========================================
+  // CADASTRO / CRIAR CONTA
+  // ==========================================
+  function validatePassword(pass) {
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    const hasLength = pass.length >= 6;
+
+    toggleRule(ruleUpper, hasUpper, "1 letra maiúscula");
+    toggleRule(ruleLower, hasLower, "1 letra minúscula");
+    toggleRule(ruleSpecial, hasSpecial, "1 caractere especial");
+    toggleRule(ruleLength, hasLength, "Mínimo de 6 caracteres");
+
+    return hasUpper && hasLower && hasSpecial && hasLength;
+  }
+
+  function toggleRule(element, isValid, labelText) {
+    if (isValid) {
+      element.classList.add('valid');
+      element.textContent = `✔ ${labelText}`;
+    } else {
+      element.classList.remove('valid');
+      element.textContent = `✖ Pelo menos ${labelText}`;
+    }
+  }
+
+  regPassword.addEventListener('input', () => {
+    validatePassword(regPassword.value);
+  });
+
+  btnOpenRegister.addEventListener('click', () => {
+    registerForm.reset();
+    registerFeedback.textContent = '';
+    registerFeedback.className = 'login-feedback';
+    validatePassword('');
+    registerModal.classList.add('is-active');
+    regEmail.focus();
+  });
+
+  btnCancelRegister.addEventListener('click', () => {
+    registerModal.classList.remove('is-active');
+  });
+
+  registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = regEmail.value.trim();
+    const pass = regPassword.value.trim();
+
+    if (!validatePassword(pass)) {
+      registerFeedback.textContent = "A senha não cumpre todos os rituais exigidos!";
+      registerFeedback.className = "login-feedback is-error";
+      return;
+    }
+
+    registerFeedback.textContent = "Invocando novo membro nas sombras...";
+    registerFeedback.className = "login-feedback";
+
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then(() => {
+        registerFeedback.textContent = "Conta criada com sucesso! Entrando no covil...";
+        registerFeedback.className = "login-feedback is-success";
+        triggerWelcomeBats();
+
+        setTimeout(() => {
+          registerModal.classList.remove('is-active');
+          registerForm.reset();
+        }, 1200);
+      })
+      .catch((error) => {
+        let msg = "Erro ao criar conta. Tente novamente.";
+        if (error.code === 'auth/email-already-in-use') {
+          msg = "Este e-mail já pertence a outra criatura!";
+        } else if (error.code === 'auth/invalid-email') {
+          msg = "O formato do e-mail é inválido!";
+        }
+        registerFeedback.textContent = msg;
+        registerFeedback.className = "login-feedback is-error";
+      });
   });
 
   function triggerWelcomeBats() {
@@ -290,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
               src="${resolvedCover}" 
               alt="Poster de ${movie.title}" 
               class="poster-img" 
-              loading="lazy"
+              loading="lazy" 
               referrerpolicy="no-referrer"
             >
           </div>
